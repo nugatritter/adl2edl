@@ -100,16 +100,16 @@ int fontInfoClass::InitializeXt( void )
     initOK = 1;
     return 1;
   } else {
-	cerr << "fontInfoClass error: Invalid font conversion file " << fontFileName << endl;
+	cerr << "fontInfoClass error: Invalid font conversion file \"" << fontFileName << "\"" << endl;
   }
 
   return 0;
 }
-
+
 fontInfoClass::~fontInfoClass ( void ) {   // destructor
 
 }
-
+
 char *fontInfoClass::getStrFromFile (
   char *str,
   int maxLen,
@@ -171,7 +171,7 @@ int tryAgain, bufOnHeap;
   return str;
 
 }
-
+
 int fontInfoClass::parseFontSpec (
   char *fontSpec,
   char *foundary,
@@ -301,7 +301,7 @@ char value[14][63+1];
   return FONTINFO_SUCCESS;
 
 }
-
+
 static char **findBestFont(
   Display *d,
   char *fontSpec,
@@ -433,7 +433,7 @@ err_return:
   return (char **) NULL;
 
 }
-
+
 int fontInfoClass::resolveFont (
   char *fontSpec,
   fontNameListPtr ptr ) {
@@ -516,7 +516,7 @@ char *tk, spec[127+1], name[127+1], family[63+1], weight[31+1],
   return FONTINFO_SUCCESS;
 
 }
-
+
 void fontInfoClass::setMediumString (
   char *str
 ) {
@@ -549,7 +549,7 @@ void fontInfoClass::setItalicString (
   italicString[63] = 0;
 
 }
-
+
 int fontInfoClass::resolveFont (
   char *fontSpec,
   char *userFontFamilyName,
@@ -649,7 +649,7 @@ char spec[127+1], name[127+1], foundary[63+1], family[63+1], weight[63+1],
   return FONTINFO_SUCCESS;
 
 }
-
+
 int fontInfoClass::resolveOneFont (
   char *fontSpec,
   fontNameListPtr ptr ) {
@@ -731,7 +731,7 @@ char *tk, spec[127+1], name[127+1], family[63+1], weight[31+1],
   return FONTINFO_SUCCESS;
 
 }
-
+
 int fontInfoClass::checkSingleFontSpecGeneric (
   XtAppContext app,
   Display *d,
@@ -919,9 +919,16 @@ char **list;
 
       for ( iii=0; iii<numSizes; iii++ ) {
 
-        sprintf( fontSpec, "%s%s%s%s%s%-d%s", t1, mod[i], t3, mod[ii],
+		#pragma GCC diagnostic push
+		#pragma GCC diagnostic ignored "-Wformat-truncation"
+        int ret = snprintf( fontSpec, sizeof(fontSpec), "%s%s%s%s%s%-d%s", t1, mod[i], t3, mod[ii],
          t5, pointSize[iii], t7 );
-
+			if(ret < 0) {
+				printf("buffer overflow in fontInfoClass::checkSingleFontSpecGeneric: %s%s%s%s%s%-d%s",
+						t1, mod[i], t3, mod[ii], t5, pointSize[iii], t7);
+				abort();
+			}
+		#pragma GCC diagnostic pop
         list = XListFonts( display, fontSpec, 1, &n );
         if ( n == 0 ) {
           if ( checkBestFont && !requireExactMatch ) {
@@ -948,7 +955,7 @@ char **list;
   return FONTINFO_SUCCESS;
 
 }
-
+
 int fontInfoClass::checkSingleFontSpec (
   XtAppContext app,
   Display *d,
@@ -982,7 +989,7 @@ int checkBest = 1;
    line, checkBest, major, minor, release );
 
 }
-
+
 int fontInfoClass::getSingleFontSpec (
   XtAppContext app,
   Display *d,
@@ -1177,10 +1184,16 @@ XFontStruct *fs;
     for ( ii=2; ii<3; ii++ ) {
 
       for ( iii=0; iii<numSizes; iii++ ) {
-
-        sprintf( fontSpec, "%s%s%s%s%s%-d%s", t1, mod[i], t3, mod[ii],
+		#pragma GCC diagnostic push
+		#pragma GCC diagnostic ignored "-Wformat-truncation"
+        int ret = snprintf( fontSpec, sizeof(fontSpec), "%s%s%s%s%s%-d%s", t1, mod[i], t3, mod[ii],
          t5, pointSize[iii], t7 );
-
+        if(ret < 0) {
+        	printf("buffer overflow in fontInfoClass::getSingleFontSpec: %s%s%s%s%s%-d%s",
+        			t1, mod[i], t3, mod[ii], t5, pointSize[iii], t7);
+        	abort();
+        }
+		#pragma GCC diagnostic pop
         //printf( "[%s]\n", fontSpec );
 
         cur = new fontNameListType;
@@ -1218,7 +1231,7 @@ XFontStruct *fs;
   return 1;
 
 }
-
+
 int fontInfoClass::flushToBrace (
   FILE *f )
 {
@@ -1254,7 +1267,7 @@ int foundBrace;
   return FONTINFO_SUCCESS;
 
 }
-
+
 int fontInfoClass::processFontGroup (
   XtAppContext app,
   Display *d,
@@ -1338,7 +1351,7 @@ int foundBrace;
   return stat; // return last stat from checkSingleFontSpec or GROUPSYNTAX
 
 }
-
+
 int fontInfoClass::initFromFileVer3 (
   XtAppContext app,
   Display *d,
@@ -1426,7 +1439,7 @@ int empty = 1;
   return FONTINFO_SUCCESS;
 
 }
-
+
 // adl2edl doesn't use default font tags, but must
 // accept them as they are valid for edm version 3 font files.
 int fontInfoClass::lineIsDefaultFontTag( const char * line )
@@ -1458,7 +1471,7 @@ int fontInfoClass::lineIsDefaultFontTag( const char * line )
 
     return 1;
 }
-
+
 int fontInfoClass::initFromFile (
   XtAppContext app,
   Display *d,
@@ -1502,7 +1515,7 @@ XFontStruct *fs;
   return FONTINFO_UNSUPPORTED;
 
 }
-
+
 XFontStruct *fontInfoClass::getXFontStruct (
   char *name )
 {
@@ -1553,14 +1566,14 @@ XmFontListEntry entry;
   return cur->fontStruct;
 
 }
-
+
 XmFontList fontInfoClass::getXmFontList ( void )
 {
 
   return this->fontList;
 
 }
-
+
 int fontInfoClass::loadFontTag (
   char *name )
 {
@@ -1604,7 +1617,7 @@ XmFontListEntry entry;
   return FONTINFO_SUCCESS;
 
 }
-
+
 int fontInfoClass::getTextFontList (
   char *name,
   XmFontList *oneFontList )
@@ -1646,7 +1659,7 @@ XmFontListEntry entry;
   return FONTINFO_SUCCESS;
 
 }
-
+
 char *fontInfoClass::bestFittingFont (
   int height )
 {
@@ -1684,7 +1697,7 @@ fontNameListPtr     bestFit = NULL;
   return( bestFit ? bestFit->name : NULL );
 
 }
-
+
 int fontInfoClass::textWidth (
   char *name,
   char *string )

@@ -1,3 +1,4 @@
+#include <map>
 #include "translator.h"
 #include "fonts.h"
 
@@ -9,11 +10,22 @@ using std::ifstream;
 using std::ofstream;
 using std::ostream;
 using std::string;
+using std::map;
 
 extern fontInfoClass fi;
 static char *fptr;
 
 extern bool urgb;
+extern map<string, string> graphicRuleMap;
+
+string ReplaceAll(string str, const string& from, const string& to) {
+	size_t start_pos = 0;
+	while((start_pos = str.find(from, start_pos)) != string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+	}
+	return str;
+}
 
 comclass::comclass()
 {
@@ -126,7 +138,7 @@ int polyclass::parse(ifstream &inf, ostream &outf, ostream &outd, int close)
             else if(!strcmp(s1,"chanB")) chanB = s2;
             else if(!strcmp(s1,"chanC")) chanC = s2;
             else if(!strcmp(s1,"chanD")) chanD = s2;
-            else outd << "Lines Can't decode line " << line << endl;
+            else outd << "Lines: Can't decode line: " << translator::line_ctr << line << endl;
         }
 		else if(mode == 3) {
 			/* points in adl file are in the form:
@@ -181,7 +193,9 @@ int polyclass::parse(ifstream &inf, ostream &outf, ostream &outd, int close)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
-
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+        outd << "Lines: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	if(urgb) outf << "lineColor rgb " << cmap.getRGB(clr) << endl;
     else outf << "lineColor index " << clr << endl;
 	if(fill) {
@@ -193,7 +207,7 @@ int polyclass::parse(ifstream &inf, ostream &outf, ostream &outd, int close)
     if(style) outf << "lineStyle \"dash\"" << endl;
 
 	if(close) outf << "closePolygon" << endl;
-	outf << "numPoints " << pt_ctr << " {" << endl;
+	outf << "numPoints " << pt_ctr << endl;
 	list<int>::iterator p = lx.begin();
 	list<int>::iterator q = ly.begin();
 	outf << "xPoints " <<  " {" << endl;
@@ -292,7 +306,7 @@ int circleclass::parse(ifstream &inf, ostream &outf, ostream &outd )
             else if(!strcmp(s1,"chanB")) chanB = s2;
             else if(!strcmp(s1,"chanC")) chanC = s2;
             else if(!strcmp(s1,"chanD")) chanD = s2;
-            else outd << "Circle Can't decode circle " << line << endl;
+            else outd << "Circle: Can't decode circle line: " << translator::line_ctr << line << endl;
         }
         else {
             if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
@@ -337,7 +351,9 @@ int circleclass::parse(ifstream &inf, ostream &outf, ostream &outd )
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
-
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+        outd << "Circle: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	if(urgb) outf << "lineColor rgb " << cmap.getRGB(clr) << endl;
     else outf << "lineColor index " << clr << endl;
     if(fill)  outf << "fill" << endl;
@@ -435,7 +451,7 @@ int arcclass::parse(ifstream &inf, ostream &outf, ostream &outd)
             else if(!strcmp(s1,"chanB")) chanB = s2;
             else if(!strcmp(s1,"chanC")) chanC = s2;
             else if(!strcmp(s1,"chanD")) chanD = s2;
-            else outd << "Arc Can't decode arc " << line << endl;
+            else outd << "Arc: Can't decode arc line: " << translator::line_ctr << line << endl;
         }
         else {
             if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
@@ -465,7 +481,9 @@ int arcclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
-
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+    	outd << "Arc: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	if(urgb) outf << "lineColor rgb " << cmap.getRGB(clr) << endl;
     else outf << "lineColor index " << clr << endl;
     if(fill)  outf << "fill" << endl;
@@ -566,7 +584,7 @@ int rectclass::parse(ifstream &inf, ostream &outf, ostream &outd)
             else if(!strcmp(s1,"chanB")) chanB = s2;
             else if(!strcmp(s1,"chanC")) chanC = s2;
             else if(!strcmp(s1,"chanD")) chanD = s2;
-            else  outd << "Rectangle Can't decode rect " << line << endl; 
+            else  outd << "Rectangle: Can't decode rect line: " << translator::line_ctr << line << endl;
         }
         else {
             if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
@@ -614,6 +632,9 @@ int rectclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
 	outf << "w " << wid << endl;
 	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "Rectangle: Not visible on display!" << " at " << translator::line_ctr << endl;
+
 	if(urgb) outf << "lineColor rgb " << cmap.getRGB(clr) << endl;
 	else outf << "lineColor index " << clr << endl;
 
@@ -700,8 +721,8 @@ int textclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 				if(mode == 0)wid = atoi(s2);
 			}
 			// Likewise ignoring "fill" for text
-			else if(!strcmp(s1,"fill"))  ; 
-			else if(!strcmp(s1,"height"))  hgt = atoi(s2); 
+			else if(!strcmp(s1,"fill")) {}
+			else if(!strcmp(s1,"height"))  {hgt = atoi(s2);}
 			else if(!strcmp(s1,"clr")) {
 				if(mode == 1)  clr = atoi(s2); 
 				else if(strstr(s2, "static")!= 0x0) colormode = 0;
@@ -714,11 +735,23 @@ int textclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 
 			// edm offers no alignment interactively on static text!
 			// but fontAlign "center" works!
+			else if(!strcmp(s1,"alignment")) {
+				if(strstr(line.c_str(), "Center")!= 0x0) align = "center";
+				else if(strstr(line.c_str(), "West")!= 0x0) align = "left";
+				else if(strstr(line.c_str(), "East")!= 0x0) align = "right";
+				else if(strstr(line.c_str(), "North")!= 0x0) align = "top";
+				else if(strstr(line.c_str(), "South")!= 0x0) align = "bottom";
+			}
 			else if(!strcmp(s1,"align")) {
                	if(strstr(line.c_str(), "horiz")!= 0x0) {
                		if(strstr(line.c_str(), "center")!= 0x0) align = "center"; 
                		else if(strstr(line.c_str(), "right")!= 0x0) align = "right";
                		else if(strstr(line.c_str(), "left")!= 0x0) align = "left";
+               		else if(strstr(line.c_str(), "Center")!= 0x0) align = "center";
+					else if(strstr(line.c_str(), "West")!= 0x0) align = "left";
+					else if(strstr(line.c_str(), "East")!= 0x0) align = "right";
+					else if(strstr(line.c_str(), "North")!= 0x0) align = "top";
+					else if(strstr(line.c_str(), "South")!= 0x0) align = "bottom";
 				}
 			}
 			else if(strstr(s1, "vis")!= 0x0) {
@@ -733,8 +766,7 @@ int textclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 			else if(!strcmp(s1,"chanC")) chanC = s2;
 			else if(!strcmp(s1,"chanD")) chanD = s2;
 			else {
-				outd << "Static Text Can't decode line: " << translator::line_ctr << endl;
-				outd << line << endl;
+				outd << "Static Text: Can't decode line: " << translator::line_ctr << line << endl;
 			}
 		} // end eq_pos
 		else {
@@ -787,6 +819,8 @@ int textclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	outf << "y " << y << endl;
 	outf << "w " << wid<< endl;
 	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "Static Text: Not visible on display!" << " at " << translator::line_ctr << endl;
 
 	fptr = fi.bestFittingFont( hgt );
 	if ( fptr ) 
@@ -838,3 +872,331 @@ int textclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	outf << "endObjectProperties" << endl;
 	return 1;
 }
+
+dsymclass::dsymclass(int attr)
+{
+	fill_attrs(attr);
+}
+
+dsymclass::~dsymclass()
+{
+}
+
+// process the "dynamic symbol" object
+int dsymclass::parse(ifstream &inf, ostream &outf, ostream &outd)
+{
+    int mode = 0; 	// braced subtopics in medm: 0=normal, 1=basic, 2=dynamic
+	squote = "\"";
+	int tpos;
+	int useOriginalSize = -1;
+	graphicRule = "";
+
+    //outd << "In dynamic symbol " << translator::line_ctr << endl;
+    do {
+        getline(inf,line);
+		translator::line_ctr++;
+        pos = line.find(bopen,0);
+        if(pos != -1)  open++; 
+        pos = line.find(bclose,0);
+        if(pos != -1)  open--; 
+
+        //If found, replace = with a space
+        eq_pos = line.find(eq,0);
+        if(eq_pos != -1){
+            line.replace(eq_pos,1,space);
+            snum = sscanf(line.c_str(), "%s %s", s1,s2);
+            if(mode == 2) {
+            	if (!strcmp(s1,"clr"))  {
+					if(strstr(s2, "static")!= 0x0) translator::da.colormode = 0;
+					else if(strstr(s2, "alarm")!= 0x0) translator::da.colormode = 1;
+					else if(strstr(s2, "discrete")!= 0x0) translator::da.colormode = 2;
+				}
+				else if(strstr(s1, "vis")!= 0x0) {
+					if(strstr(line.c_str(), "static")!= 0x0) translator::da.vis = 0;
+					else if(strstr(line.c_str(), "if not zero")!= 0x0) translator::da.vis = 1;
+					else if(strstr(line.c_str(), "if zero")!= 0x0) translator::da.vis = 2;
+					else if(strstr(line.c_str(), "calc")!= 0x0) translator::da.vis = 3;
+				}
+				else if (!strcmp(s1,"calc"))  translator::da.calc = s2;
+				else if (!strcmp(s1,"chan"))  translator::da.chan = s2;
+				else if (!strcmp(s1,"chanB")) translator::da.chanB = s2;
+				else if (!strcmp(s1,"chanC"))  translator::da.chanC = s2;
+				else if (!strcmp(s1,"chanD"))  translator::da.chanD = s2;
+            }
+            else if(!strcmp(s1,"clr"))  clr = atoi(s2);
+			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2);
+            else if (!strcmp(s1,"x"))  x = atoi(s2);
+            else if(!strcmp(s1,"y"))  y = atoi(s2); 
+			// If width is within the basic attribs braces, it's linewidth
+            else if(!strcmp(s1,"width")) {
+                if(mode == 0) wid = atoi(s2); 	//normal mode
+                else  linewidth = atoi(s2);		// basic mode
+            }
+            else if(!strcmp(s1,"height"))  hgt = atoi(s2); 
+
+			// If clr is within the dyn attribs braces, it's colormode
+        	else if(!strcmp(s1,"clr")) {
+                if(mode == 1) clr = atoi(s2);	//basic mode
+                else if(strstr(s2, "static")!= 0x0) colormode = 0;
+                else if(strstr(s2, "alarm")!= 0x0) colormode = 1;
+                else if(strstr(s2, "discrete")!= 0x0) colormode = 2;
+            }
+            else if(!strcmp(s1,"fill")) {
+                if(strstr(s2, "solid")!= 0x0) {
+					fill = 1;
+					linewidth = 0;
+				} else fill = 0;
+            }
+            else if(!strcmp(s1,"style")) {
+                if(strstr(s2, "solid")!= 0x0) style = 0;
+                else style = 1; //dashed line
+			}
+            else if(strstr(s1, "vis")!= 0x0) {
+                if(strstr(line.c_str(), "static")!= 0x0) vis = 0;
+                else if(strstr(line.c_str(), "if not zero")!= 0x0) vis = 1;
+                else if(strstr(line.c_str(), "if zero")!= 0x0) vis = 2;
+                else if(strstr(line.c_str(), "calc")!= 0x0) vis = 3;
+            }
+            else if(!strcmp(s1,"calc")) calc = s2;
+            else if(!strcmp(s1,"chan")) chan = s2;
+            else if(!strcmp(s1,"chanB")) chanB = s2;
+            else if(!strcmp(s1,"chanC")) chanC = s2;
+            else if(!strcmp(s1,"chanD")) chanD = s2;
+            else if(!strcmp(s1,"graphicRule")) graphicRule = ReplaceAll(s2, "\"", "");
+            else if(!strcmp(s1,"fit")) {
+				if(!strcmp(s2,"\"no\""))
+					useOriginalSize = 1;
+				else if(!strcmp(s2,"\"yes\""))
+					useOriginalSize = 0;
+			}
+            else  outd << "Dynamic Symbol: Can't decode dynamic symbol line: " << translator::line_ctr << line << endl;
+        }
+        else {
+            if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
+            else if(strstr(line.c_str(), "dynamic") != 0x0) mode = 2;
+            else if(strstr(line.c_str(), "object") != 0x0) mode = 0;
+            else if(strstr(line.c_str(), "}") != 0x0) mode = 0;
+        }
+    } while (open > 0);
+
+	if(vis) {
+		stripQs(calc);
+		stripQs(chan);
+		stripQs(chanB);
+		stripQs(chanC);
+		stripQs(chanD);
+		if(calc.length() == 0) calc = "A";
+	}
+
+	// Fix for rf SRF zone screens
+	if(wid==2 && hgt==2 && linewidth==3) {
+		outd << "bad dynamic symbol " << translator::line_ctr << endl;
+		return 1;
+	}
+
+    outf << endl;
+    outf << "# (Symbol)" << endl;
+    outf << "object activeSymbolClass" << endl;
+    outf << "beginObjectProperties" << endl;
+    outf << "major " << ARC_MAJOR_VERSION << endl;
+    outf << "minor " << ARC_MINOR_VERSION << endl;
+    outf << "release " << ARC_RELEASE << endl;
+
+	if(linewidth) {
+		x = x + (int)(linewidth/2);
+		y = y + (int)(linewidth/2);
+		wid = wid -linewidth;
+		hgt = hgt -linewidth;
+	}
+	if(fill) {
+		wid =  wid-1;
+		hgt =  hgt-1;
+	} 
+
+    outf << "x " << x << endl;
+    outf << "y " << y << endl;
+	outf << "w " << wid << endl;
+	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "Symbol: Not visible on display!" << " at " << translator::line_ctr << endl;
+	//if(urgb) outf << "lineColor rgb " << cmap.getRGB(clr) << endl;
+	//else outf << "lineColor index " << clr << endl;
+
+	//if(fill)  outf << "fill" << endl;
+
+	//if(urgb) outf << "fillColor rgb " << cmap.getRGB(clr) << endl;
+	//else outf << "fillColor index " << clr << endl;
+
+	//outf << "lineWidth " << linewidth << endl;
+	//if(linewidth != 1) outf << "lineWidth " << linewidth << endl;
+	//if(style) outf << "lineStyle \"dash\"" << endl;
+
+	//if(colormode == 1) {
+	//	outf << "fillAlarm" << endl;
+    //    outf << "lineAlarm" << endl;
+	//	outf << "alarmPv " << chan  << endl;
+	//}
+	if(clr >= 0) {
+		outf << "fgColor index " << clr << endl;
+	}
+	if(bclr >= 0) {
+		outf << "bgColor index " << bclr << endl;
+	}
+	if(vis != 0) { 
+		string tstr = "visPv \"CALC\\\\\\{(";
+		string tstr2 = ")\\}(";
+		outf <<  tstr << calc << tstr2 << chan ;
+		if(chanB.length()) outf << ", " << chanB ;
+		if(chanC.length()) outf << ", " << chanC ;
+		if(chanD.length()) outf << ", " << chanD ;
+		outf << ")\"" << endl;
+		//outd << "vis " << vis << endl;
+		//outd <<  tstr << calc << tstr2 << chan << endl;
+		if(vis == 1 || vis == 3) {
+			outf << "visInvert" <<  endl;
+			outf << "visMin 0" << endl;
+			outf << "visMax 1" << endl;
+		} else {
+			//outf << "visMin 1" << endl;
+			//outf << "visMax 10000" << endl;
+			outf << "visMin 0" << endl;
+			outf << "visMax 1" << endl;
+		}
+	}
+	if(useOriginalSize >= 0) {
+		outf << "useOriginalSize " << useOriginalSize << endl;
+	}
+	if(graphicRule.length()) {
+		string graphicRuleEntry = graphicRuleMap[graphicRule];
+		outf << graphicRuleMap[graphicRule] << endl;
+	}
+	if(translator::da.chan.length()) {
+		int numPvs = 0;
+		outf << "controlPvs {" << endl;
+		outf << numPvs << " " << translator::da.chan << endl;
+		numPvs++;
+		if(translator::da.chanB.length()) {
+			outf << numPvs << " " << translator::da.chanB << endl;
+			numPvs++;
+		}
+		if(translator::da.chanC.length()) {
+			outf << numPvs << " " << translator::da.chanC << endl;
+			numPvs++;
+		}
+		if(translator::da.chanD.length()) {
+			outf << numPvs << " " << translator::da.chanD << endl;
+			numPvs++;
+		}
+		outf << "}" << endl;
+		outf << "numPvs " << numPvs << endl;
+
+	}
+	outf << "useOriginalColors 1" << endl;
+    outf << "endObjectProperties" << endl; 
+    return 1;
+}
+
+gifclass::gifclass(int attr)
+{
+	fill_attrs(attr);
+}
+
+gifclass::~gifclass()
+{
+}
+
+// process the "dynamic symbol" object
+int gifclass::parse(ifstream &inf, ostream &outf, ostream &outd)
+{
+	int mode = 0;
+	string file = "";
+	do {
+		getline(inf,line);
+		//outd << line << endl;
+		translator::line_ctr++;
+		pos = line.find(bopen,0);
+		if(pos != -1)  open++;
+		pos = line.find(bclose,0);
+		if(pos != -1)  open--;
+
+		eq_pos = line.find(eq,0);
+		if(strstr(line.c_str(), "image name") != 0x0) file = string(line, eq_pos, std::string::npos);
+		else if(strstr(line.c_str(), "type") != 0x0) {;} // ignore
+		else if(eq_pos != -1){
+			line.replace(eq_pos,1,space);
+			//outd << "Line after eq sub: " << line << endl;
+			snum = sscanf(line.c_str(), "%s %s", s1,s2);
+			if     (!strcmp(s1,"x"))  x = atoi(s2);
+			else if(!strcmp(s1,"y"))  y = atoi(s2);
+
+			// Why would medm write "wid = 2" in text within basic attrs?
+			// For other graphic objects, it means linewidth.
+			// We are ignoring it!
+			else if(!strcmp(s1,"width"))  {
+				if(mode == 0)wid = atoi(s2);
+			}
+			// Likewise ignoring "fill" for text
+			else if(!strcmp(s1,"fill")) {}
+			else if(!strcmp(s1,"height"))  {hgt = atoi(s2);}
+			else if(!strcmp(s1,"clr")) {
+				if(mode == 1)  clr = atoi(s2);
+				else if(strstr(s2, "static")!= 0x0) colormode = 0;
+				else if(strstr(s2, "alarm")!= 0x0) colormode = 1;
+				else if(strstr(s2, "discrete")!= 0x0) colormode = 2;
+			}
+			else {
+				outd << "GIF Image: can't decode line: " << translator::line_ctr << endl;
+				outd << line << endl;
+			}
+		} // end eq_pos
+		else {
+			if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
+			else if(strstr(line.c_str(), "dynamic") != 0x0) mode = 2;
+			else if(strstr(line.c_str(), "object") != 0x0) mode = 0;
+			else if(strstr(line.c_str(), bclose.c_str()) != 0x0) mode = 0;
+		}
+	} while (open > 0);
+	// Strip the quotes from the pv names when used for visibility pv
+	if(vis) {
+		stripQs(calc);
+		stripQs(chan);
+		stripQs(chanB);
+		stripQs(chanC);
+		stripQs(chanD);
+		if(calc.length() == 0) calc = "A";
+	}
+	// Fix for rf SRF zone screens
+	if(wid==2 && hgt==2 && linewidth==3) {
+		outd << "GIF Image has bad dynamic symbol " << translator::line_ctr << endl;
+		return 1;
+	}
+	outf << endl;
+	outf << "# (GIF Image)" << endl;
+	outf << "object cfcf6c8a_dbeb_11d2_8a97_00104b8742df" << endl;
+	outf << "beginObjectProperties" << endl;
+	outf << "major " << ARC_MAJOR_VERSION << endl;
+	outf << "minor " << ARC_MINOR_VERSION << endl;
+	outf << "release " << ARC_RELEASE << endl;
+	if(linewidth) {
+		x = x + (int)(linewidth/2);
+		y = y + (int)(linewidth/2);
+		wid = wid -linewidth;
+		hgt = hgt -linewidth;
+	}
+	if(fill) {
+		wid =  wid-1;
+		hgt =  hgt-1;
+	}
+
+	outf << "x " << x << endl;
+	outf << "y " << y << endl;
+	outf << "w " << wid << endl;
+	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "GIF Image: Not visible on display!" << " at " << translator::line_ctr << endl;
+
+	outf << "file " << file << endl;
+	outf << "endObjectProperties" << endl;
+	return 1;
+}
+

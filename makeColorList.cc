@@ -17,7 +17,7 @@ public:
 	cmap();
 	~cmap();
 	int buildColorList(ifstream&, ofstream&);
-	int numColors;
+	int numColors = 0;
 };
 
 cmap::cmap()
@@ -29,7 +29,7 @@ cmap::~cmap()
 }
 
 
-int main(int argc, char **argv)
+int main_(int argc, char **argv)
 {
 	if(argc < 3) {
         cout << "Version 1.0" << endl;
@@ -38,13 +38,13 @@ int main(int argc, char **argv)
     }
 	ifstream inf(argv[1]);
     if(!inf) {
-        cout << "unable to open " << argv[1] << endl;
+        cout << "unable to open input file \"" << argv[1] << "\"" << endl;
         exit(1);
     }
 
 	ofstream outf(argv[2]);
     if(!outf) {
-        cout << "unable to open " << argv[2] << endl;
+        cout << "unable to open output file \"" << argv[2] << "\"" << endl;
         exit(1);
     }
 
@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	return 0;
 }
 
 

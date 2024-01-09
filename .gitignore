@@ -5,3 +5,11 @@ Makefile
 adl2edl
 adlMakeColorList
 cmake_install.cmake
+*.sh
+Release/
+Debug/
+.cproject
+.project
+.settings
+.vscode
+adltemp_*

@@ -108,6 +108,11 @@
 #define PIP_MINOR_VERSION 1
 #define PIP_RELEASE 0
 
+// dsym_obj.h 
+#define ARC_MAJOR_VERSION 4
+#define ARC_MINOR_VERSION 0
+#define ARC_RELEASE 0
+
 struct battr {
 		int clr;
 		int style;
@@ -132,16 +137,16 @@ public:
 	virtual ~parseclass();
 	void stripQs(std::string &str);
 	std::string line;
-    int pos;
-    int eq_pos;
-    int open;
+    int pos = 0;
+    int eq_pos = 0;
+    int open = 0;
     std::string bopen;
     std::string bclose;
     std::string eq;
     std::string space;
     std::string nil;
 	std::string squote;
-    int snum;
+    int snum = 0;
     char s1[256], s2[256];
 };
 
@@ -151,25 +156,27 @@ public:
 	comclass();
 	virtual ~comclass();
 	void fill_attrs(int attr);
-	int x;
-    int y;
-    int wid;
-    int hgt;
-	int clr;
+	int x = 0;
+    int y = 0;
+    int wid = 0;
+    int hgt = 0;
+	int clr = 0;
+	int bclr = -1;
 
-	int style;
-	int fill;
-	int linewidth;
-	int colormode;	// static, alarm, or discrete
+	int style = 0;
+	int fill = 0;
+	int linewidth = 0;
+	int colormode = 0;	// static, alarm, or discrete
 
-	int vis;		// static, if not zero, if zero, calc
-	int visInverted;
+	int vis = 0;		// static, if not zero, if zero, calc
+	int visInverted = 0;
 
 	std::string calc;
 	std::string chan;
 	std::string chanB;
 	std::string chanC;
 	std::string chanD;
+	std::string graphicRule;
 };
 
 class shellclass : public comclass, public parseclass
@@ -177,7 +184,7 @@ class shellclass : public comclass, public parseclass
 public:
 	shellclass(int attr);
 	virtual ~shellclass();
-	int parse(std::ifstream&, std::ostream&, std::ostream&);
+	int parse(std::ifstream&, std::ostream&, std::ostream&, bool isMenuItem = false);
 	int bclr;
 };
 
@@ -187,7 +194,7 @@ public:
 	valclass(int attr);
 	virtual ~valclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int bclr;
+	int bclr = 0;
 };
 
 class mbuttonclass : public comclass, parseclass
@@ -217,10 +224,10 @@ public:
 	byteclass(int attr);
 	virtual ~byteclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int bclr;
-	int direction;
-	int sbit;
-	int ebit;
+	int bclr = 0;
+	int direction = 0;
+	int sbit = 0;
+	int ebit = 0;
 };
 
 class shellnode 
@@ -231,6 +238,8 @@ public:
     std::string name;
     std::string label;
     std::string args;
+    std::string type;
+    std::string command;
 };
 
 class relnode 
@@ -250,7 +259,7 @@ public:
     virtual ~tnode();
     std::string xdata;
     std::string ydata;
-    int color;
+    int color = 0;
 };
 
 
@@ -261,7 +270,7 @@ public:
 	virtual ~relatedclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 	std::string look_for_file(std::ostream&, std::string tname);
-	int bclr;
+	int bclr = 0;
 };
 
 class xyclass :public comclass, public parseclass
@@ -271,39 +280,39 @@ public:
 	virtual ~xyclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 	//int clr;
-	int bgColor;
-	int plotMode;
-	int border;
-	int count;
-	int updateTimerValue;
-	int xAxis;
-	int xAxisStyle;
-	int xAxisSource;
-	int xMin1;
-	int xMin2;
-	int xMax1;
-	int xMax2;
-	int xAxisTimeFormat;
-	int symbol;
+	int bgColor = 0;
+	int plotMode = 0;
+	int border = 0;
+	int count = 0;
+	int updateTimerValue = 0;
+	int xAxis = 0;
+	int xAxisStyle = 0;
+	int xAxisSource = 0;
+	int xMin1 = 0;
+	int xMin2 = 0;
+	int xMax1 = 0;
+	int xMax2 = 0;
+	int xAxisTimeFormat = 0;
+	int symbol = 0;
 
 	std::string title;
 	std::string xlabel;
 	std::string ylabel;
 	std::string squote;
-	int erase;
+	int erase = 0;
 
 	// Axes:
 	// if range is "from pv", that value is not in adl file
-	int xrangeStyle;
-	int y1rangeStyle;
-	int y2rangeStyle;
+	int xrangeStyle = 0;
+	int y1rangeStyle = 0;
+	int y2rangeStyle = 0;
 	// if min = 0 or max = 1, that value is not in adl file
-	double xmin;
-	double xmax;
-	double y1min;
-	double y1max;
-	double y2min;
-	double y2max;
+	double xmin = 0;
+	double xmax = 0;
+	double y1min = 0;
+	double y1max = 0;
+	double y2min = 0;
+	double y2max = 0;
 };
 
 class stripclass :public comclass, public parseclass
@@ -313,39 +322,39 @@ public:
 	virtual ~stripclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 	//int clr;
-	int bgColor;
-	int plotMode;
-	int border;
-	int count;
-	int updateTimerValue;
-	int xAxis;
-	int xAxisStyle;
-	int xAxisSource;
-	int xMin1;
-	int xMin2;
-	int xMax1;
-	int xMax2;
-	int xAxisTimeFormat;
-	int symbol;
+	int bgColor = 0;
+	int plotMode = 0;
+	int border = 0;
+	int count = 0;
+	int updateTimerValue = 0;
+	int xAxis = 0;
+	int xAxisStyle = 0;
+	int xAxisSource = 0;
+	int xMin1 = 0;
+	int xMin2 = 0;
+	int xMax1 = 0;
+	int xMax2 = 0;
+	int xAxisTimeFormat = 0;
+	int symbol = 0;
 
 	std::string title;
 	std::string xlabel;
 	std::string ylabel;
 	std::string squote;
-	int erase;
+	int erase = 0;
 
 	// Axes:
 	// if range is "from pv", that value is not in adl file
-	int xrangeStyle;
-	int y1rangeStyle;
-	int y2rangeStyle;
+	int xrangeStyle = 0;
+	int y1rangeStyle = 0;
+	int y2rangeStyle = 0;
 	// if min = 0 or max = 1, that value is not in adl file
-	double xmin;
-	double xmax;
-	double y1min;
-	double y1max;
-	double y2min;
-	double y2max;
+	double xmin = 0;
+	double xmax = 0;
+	double y1min = 0;
+	double y1max = 0;
+	double y2min = 0;
+	double y2max = 0;
 };
 
 class barclass : public comclass, public parseclass
@@ -354,8 +363,11 @@ public:
 	barclass(int attr);
 	virtual ~barclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int bgColor;
+	int bgColor = 0;
 	std::string label;
+	bool showScale = true;
+	bool showAlarmLimits = true;
+	std::string scaleType = "";
 };
 
 class meterclass :public comclass, public parseclass
@@ -365,34 +377,34 @@ public:
 	virtual ~meterclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 
-	int meterColorMode;
-	int scaleColor;
-	int scaleColorMode;
-	int labelColor;
-	int fgColor;
-	int bgColor;
-	int tsColor;
-	int bsColor;
+	int meterColorMode = 0;
+	int scaleColor = 0;
+	int scaleColorMode = 0;
+	int labelColor = 0;
+	int fgColor = 0;
+	int bgColor = 0;
+	int tsColor = 0;
+	int bsColor = 0;
 
 	std::string controlPvExpStr;
 	std::string readPvExpStr;
 	std::string literalLabel;
 	std::string label;
-	int labelType;
-	int showScale;
+	int labelType = 0;
+	int showScale = 0;
 	std::string scaleFormat;
-	int scalePrecision;
-	int scaleLimitsFromDb;
-	int useDisplayBg;
-	int majorIntervals;
-	int minorIntervals;
-	int needleType;
-	int shadowMode;
-	int scaleMin;
-	int scaleMax;
+	int scalePrecision = 0;
+	int scaleLimitsFromDb = 0;
+	int useDisplayBg = 0;
+	int majorIntervals = 0;
+	int minorIntervals = 0;
+	int needleType = 0;
+	int shadowMode = 0;
+	int scaleMin = 0;
+	int scaleMax = 0;
 	std::string labelFontTag;
 	std::string scaleFontTag;
-	int meterAngle;
+	int meterAngle = 0;
 };
 
 class menuclass :public comclass, public parseclass
@@ -401,7 +413,7 @@ public:
     menuclass(int attr);
     virtual ~menuclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int bclr;
+	int bclr = 0;
 };
 
 class textmonclass :public comclass, public parseclass
@@ -410,7 +422,7 @@ public:
     textmonclass(int attr);
     virtual ~textmonclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&, int noedit);
-	int bclr;
+	int bclr = 0;
 	std::string format;
 };
 
@@ -420,9 +432,9 @@ public:
 	polyclass(int attr);
 	virtual ~polyclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&, int close);
-	int fillColor;
-	int close;
-	int arrows;
+	int fillColor = 0;
+	int close = 0;
+	int arrows = 0;
 };
 
 class circleclass : public comclass, public parseclass
@@ -431,8 +443,8 @@ public:
 	circleclass(int attr);
 	virtual ~circleclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int width;
-	int fillColor;
+	int width = 0;
+	int fillColor = 0;
 };
 
 class arcclass : public comclass, public parseclass
@@ -441,12 +453,12 @@ public:
 	arcclass(int attr);
 	virtual ~arcclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
-	int fillColorMode;
-	int startAng;
-	int startAng2;
-	int totalAng;
-	int totalAng2;
-	int fillMode;
+	int fillColorMode = 0;
+	int startAng = 0;
+	int startAng2 = 0;
+	int totalAng = 0;
+	int totalAng2 = 0;
+	int fillMode = 0;
 };
 
 
@@ -459,7 +471,7 @@ public:
 	std::string& getRGB(int index) ;
 private:
 	std::vector <std::string> rgbvec;
-	int numColors;
+	int numColors = 0;
 };
 
 class rectclass : public comclass, public parseclass
@@ -477,7 +489,7 @@ public:
 	virtual ~textclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 
-	int bkClr;
+	int bkClr = 0;
 	std::string textstr;
 };
 	
@@ -488,14 +500,27 @@ public:
 	virtual ~headclass();
 	int parse(std::ifstream&, std::ostream&, std::ostream&);
 
-	int fgClr;
-	int bkClr;
-	int gridShow; 		// gridShow 0, Active 0, Spacing 10, orthogonal 0
-	int gridSpacing; 	//5
-	int gridOn; 		//0
-	int snapToGrid; 	//0
+	int fgClr = 0;
+	int bkClr = 0;
+	int gridShow = 0; 		// gridShow 0, Active 0, Spacing 10, orthogonal 0
+	int gridSpacing = 5; 	//5
+	int gridOn = 0; 		//0
+	int snapToGrid = 0; 	//0
 };
-
+class dsymclass : public comclass, public parseclass
+{
+public:
+	dsymclass(int attr);
+	virtual ~dsymclass();
+	int parse(std::ifstream&, std::ostream&, std::ostream&);
+};
+class gifclass : public comclass, public parseclass
+{
+public:
+	gifclass(int attr);
+	virtual ~gifclass();
+	int parse(std::ifstream&, std::ostream&, std::ostream&);
+};
 class translator
 {
 public:
@@ -512,6 +537,8 @@ public:
 	std::ofstream toutf;
 	static std::string dir;
 	static int line_ctr;
+	static int display_height;
+	static int display_width;
 	static bool debug;
 	static struct battr ba;
 	static struct dattr da;

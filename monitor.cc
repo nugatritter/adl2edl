@@ -80,9 +80,9 @@ int byteclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 			}
 		}
 		else {
-			if(!strstr(line.c_str(),"object")) ;
-			else if(!strstr(line.c_str(),"monitor")) ;
-			else outd << "BYTE Can't decode:  " << line << endl;
+			if(!strstr(line.c_str(),"object")) {}
+			else if(!strstr(line.c_str(),"monitor")) {}
+			else {outd << "Byte: Can't decode line: " << translator::line_ctr << line << endl;}
 		}
     } while (open > 0);
 
@@ -99,6 +99,9 @@ int byteclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+    	outd << "Byte: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	outf << "controlPv " << chan <<  endl;
 	if(urgb) {
 		outf << "lineColor rgb " << cmap.getRGB(14) << endl;
@@ -156,7 +159,7 @@ int xyclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	int trace_ct = 0;
 
 	vector <tnode> tracelist;
-	tnode *tn;
+	tnode *tn = NULL;
 	bool node = false;
 	bool no_x = false;
 
@@ -278,10 +281,10 @@ int xyclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 		else if(strstr(line.c_str(), "y2_axis") != 0x0) mode = 3;
 		else if(strstr(line.c_str(), "trace") != 0x0) mode = 4;
 		else if(strstr(line.c_str(), bclose.c_str()) != 0x0)  mode = 0; 
-		else if(strstr(line.c_str(), "object") != 0x0) ; // ignore
-		else if(strstr(line.c_str(), "plotcom") != 0x0) ; // ignore
+		else if(strstr(line.c_str(), "object") != 0x0) {} // ignore
+		else if(strstr(line.c_str(), "plotcom") != 0x0) {} // ignore
 
-		else outd << "cartesian X-Y Graph Can't decode:  " << line << endl;
+		else outd << "Cartesian X-Y Graph: Can't decode line: " << translator::line_ctr << line << endl;
     } while (open > 0);
 	outf << endl;
     outf << "# (X-Y Graph)" << endl;
@@ -294,6 +297,8 @@ int xyclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+        outd << "X-Y Graph: Not visible on display!" << " at " << translator::line_ctr << endl;
 
     outf << "# Appearance" << endl;
     outf << "border" << endl;
@@ -516,15 +521,15 @@ int stripclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 			}
 		}// end of has '=' sign section
 
-		else if(strstr(line.c_str(), "object") != 0x0) ;// ignore
-		else if(strstr(line.c_str(), "plotcom") != 0x0) ;// ignore
-		else if(strstr(line.c_str(), "}") != 0x0) ;// ignore
+		else if(strstr(line.c_str(), "object") != 0x0) {}// ignore
+		else if(strstr(line.c_str(), "plotcom") != 0x0) {}// ignore
+		else if(strstr(line.c_str(), "}") != 0x0) {}// ignore
 		else if(strstr(line.c_str(), "pen") != 0x0) {
 			mode = 1;
 			tn = new tnode();
 		}
 		else {
-			outd << "strip X-Y Graph Can't decode:  " << line << endl;
+			outd << "Strip X-Y Graph: Can't decode line: " << translator::line_ctr << line << endl;
 		}
     } while (open > 0);
 
@@ -541,6 +546,8 @@ int stripclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+        outd << "Geometry: Not visible on display!" << " at " << translator::line_ctr << endl;
 
     outf << "# Appearance" << endl;
     outf << "border" << endl;
@@ -642,7 +649,7 @@ int barclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 {
 	bool vert = false;
 	bool center = false;
-	int label_type;
+	int label_type = 0;
 	string prec;
 	string max;
 	string min;
@@ -703,21 +710,48 @@ int barclass::parse(ifstream &inf, ostream &outf, ostream &outd)
                 ; // ignore
             }
 			else if(!strcmp(s1,"loprDefault")) {
-                min = s2;; 
+                min = s2;
             }
 			else if(!strcmp(s1,"hoprDefault")) {
-                max = s2;; 
+                max = s2;
             }
             else if(!strcmp(s1,"precDefault")) {
                 prec = s2;
             }
-
-			else {
-				outd << "Bar Can't decode text " << line << endl;
+            else if(!strcmp(s1,"lowLimit")) {
+            	min = s2;
 			}
+            else if(!strcmp(s1,"highLimit")) {
+            	max = s2;
+			}
+            else if(!strcmp(s1,"showScale")) {
+            	if(!strcmp(s2,"off"))
+            		showScale = false;
+            	else
+            		showScale = true;
+			}
+            else if(!strcmp(s1,"showAlarmLimits")) {
+				if(!strcmp(s2,"off"))
+					showAlarmLimits = false;
+				else
+					showAlarmLimits = true;
+			}
+            else if(!strcmp(s1,"scaleType")) {
+            	scaleType = s2;
+			}
+            else if(!strcmp(s1,"precision")) {
+				prec = s2;
+			}
+            else if(!strcmp(s1,"showBar")) {
+            	; // ignore
+            }
+			else {
+				outd << "Bar: Can't decode text line: " << translator::line_ctr << line << endl;
+			}
+
 		} else {
-			if(strstr(line.c_str(), "object")!= 0x0) ; //ignore
-			else if(strstr(line.c_str(), "monitor")!= 0x0) ; //ignore
+			if(strstr(line.c_str(), "object")!= 0x0) {} //ignore
+			else if(strstr(line.c_str(), "monitor")!= 0x0) {} //ignore
 		}
 
 	} while (open > 0);
@@ -732,6 +766,8 @@ int barclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	outf << "y " << y << endl;
 	outf << "w " << wid<< endl;
 	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "Bar: Not visible on display!" << " at " << translator::line_ctr << endl;
 
 	if(center)
 		outf << "origin 0" << endl;
@@ -744,12 +780,12 @@ int barclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 		outf << "fgColor index " << 14 << endl;
 		outf << "bgColor index " << bgColor << endl;
 	}
-    if(colormode == 1) {   
+    if(showAlarmLimits && colormode == 1) {
         outf << "fgAlarm" << endl;
         outf << "indicatorAlarm" << endl;
 	}
 	outf << "indicatorPv " << chan << endl;	
-	if(label_type == 1 || label_type == 2)
+	if(showScale && (label_type == 1 || label_type == 2))
 		outf << "showScale" << endl;
 
 	fptr = fi.bestFittingFont( 8 );
@@ -774,7 +810,10 @@ int barclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	if(max.length())
 		outf << "max " << max << endl;
 	outf << "border" << endl;
-	outf << "scaleFormat \"FFloat\"" << endl;
+	if(strstr(scaleType.c_str(), "logarithm")!= 0x0)
+			outf << "scaleFormat \"Exponential\"" << endl;
+	else
+		outf << "scaleFormat \"FFloat\"" << endl;
 	if(vert)
 		outf << "orientation \"vertical\"" << endl;
 	else
@@ -827,11 +866,11 @@ int meterclass::parse(ifstream &inf, ostream &outf, ostream &outd)
             else if(!strcmp(s1,"hoprDefault")) {
                 max = s2;;
             }
-			else if(!strcmp(s1,"hoprSrc"))  ; // ignore 
-			else if(!strcmp(s1,"loprSrc"))  ; // ignore 
+			else if(!strcmp(s1,"hoprSrc"))  {} // ignore
+			else if(!strcmp(s1,"loprSrc"))  {} // ignore
 
 			else 
-				outd << "Meter Can't decode text " << line << endl;
+				outd << "Meter: Can't decode text line: " << translator::line_ctr << line << endl;
 		}
 	} while (open > 0);
 
@@ -845,6 +884,9 @@ int meterclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+    	outd << "Meter: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 
 	if(urgb) {
 		outf << "caseColor rgb " << cmap.getRGB(bgColor) << endl;
@@ -948,8 +990,20 @@ int textmonclass::parse(ifstream &inf, ostream &outf, ostream &outd, int edit)
 					if(strstr(line.c_str(), "center")!= 0x0) align = "center";
 					else if(strstr(line.c_str(), "right")!= 0x0) align = "right";
 					else if(strstr(line.c_str(), "left")!= 0x0) align = "left";
-					}
+					else if(strstr(line.c_str(), "Center")!= 0x0) align = "center";
+					else if(strstr(line.c_str(), "West")!= 0x0) align = "left";
+					else if(strstr(line.c_str(), "East")!= 0x0) align = "right";
+					else if(strstr(line.c_str(), "North")!= 0x0) align = "top";
+					else if(strstr(line.c_str(), "South")!= 0x0) align = "bottom";
 				}
+			}
+			else if(!strcmp(s1,"alignment")) {
+				if(strstr(line.c_str(), "Center")!= 0x0) align = "center";
+				else if(strstr(line.c_str(), "West")!= 0x0) align = "left";
+				else if(strstr(line.c_str(), "East")!= 0x0) align = "right";
+				else if(strstr(line.c_str(), "North")!= 0x0) align = "top";
+				else if(strstr(line.c_str(), "South")!= 0x0) align = "bottom";
+			}
             else if(!strcmp(s1,"chan") || !strcmp(s1,"ctrl") || !strcmp(s1,"rdbk")) { 
                 chan = string(line, eq_pos+1, std::string::npos);
 			}
@@ -967,8 +1021,11 @@ int textmonclass::parse(ifstream &inf, ostream &outf, ostream &outd, int edit)
             else if(!strcmp(s1,"precDefault")) { 
 				prec = s2;
 			}
+            else if(!strcmp(s1,"precision")) {
+				prec = s2;
+			}
             else 
-                outd << "Text Control Can't decode line " << line << endl;
+                outd << "Text Control: Can't decode line: " << translator::line_ctr << line << endl;
         }
         else {
             if(strstr(line.c_str(), "basic") != 0x0) mode = 1;
@@ -993,6 +1050,8 @@ int textmonclass::parse(ifstream &inf, ostream &outf, ostream &outd, int edit)
     outf << "minor " << XTDC_MINOR_VERSION  << endl;
     outf << "release " << XTDC_RELEASE << endl;
     outf << "x " << x << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+        outd << "Text Monitor: Not visible on display!" << " at " << translator::line_ctr << endl;
 
 
     outf << "y " << y << endl;

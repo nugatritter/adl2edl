@@ -36,9 +36,10 @@ buttonclass::~buttonclass()
 // process the "choice button" object
 int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 {
-
+	string sensitive_chan("");
+	string sensitive_mode("");
 	bool stacking = 0;
-
+	bool isSensitive = false;
 	colormode = 0;
 	//outd << "In ChoiceButton "  << translator::line_ctr << endl;
 	do {
@@ -48,8 +49,10 @@ int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 		if(pos != -1) { open++; }
 		pos = line.find(bclose,0);
         if(pos != -1) { open--; }
+        pos = line.find("sensitive",0);
+		if(pos != -1)  isSensitive = true;
 
-        eq_pos = line.find(eq,0);
+		eq_pos = line.find(eq,0);
         if(eq_pos != -1){
 			line.replace(eq_pos,1,space);
 			snum = sscanf(line.c_str(), "%s %s", s1,s2);
@@ -58,7 +61,13 @@ int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 			else if(!strcmp(s1,"width"))  wid = atoi(s2); 
 			else if(!strcmp(s1,"height"))  hgt = atoi(s2); 
 			else if(!strcmp(s1,"clr"))  clr = atoi(s2); 
-			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2); 
+			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2);
+			else if((!strcmp(s1,"chan")) && isSensitive) {
+				sensitive_chan = s2;
+			}
+			else if((!strcmp(s1,"sensitive_mode")) && isSensitive) {
+				sensitive_mode = string(line, eq_pos, std::string::npos);
+			}
 			else if(!strcmp(s1,"chan")||!strcmp(s1,"ctrl"))  {
 				chan = string(line, eq_pos+1, std::string::npos);;
 			}
@@ -68,10 +77,9 @@ int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
                 else if(strstr(s2, "alarm") != 0x0) colormode = 1;
                 else if(strstr(s2, "discrete") != 0x0) colormode = 2;
             }
-			else outd << "Choice Button Can't decode " << line << endl;
+			else outd << "Choice Button: Can't decode line: " << translator::line_ctr << line << endl;
 		}
     } while (open > 0);
-
 	outf << endl;
     outf << "# (Choice Button)" << endl;
     outf << "object activeChoiceButtonClass" << endl;
@@ -83,6 +91,9 @@ int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+    	outd << "Choice Button: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	if(urgb) {
 		if(colormode == 1) {   
 			// medm shows fg in green for alarm colormode
@@ -129,7 +140,14 @@ int buttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     //outf << "objType \"controls\"" << endl;
 	if(stacking)
     	outf << "orientation \"horizontal\""  << endl;
-		
+	if(isSensitive) {
+		outf << "visPv \"" << sensitive_chan << "\"" << endl;
+		if(!strcmp(sensitive_mode.c_str(), "if zero")) {
+			outf << "visInvert" << endl;
+		}
+		outf << "visMin \"1\"" << endl;
+		outf << "visMax \"2\"" << endl;
+	}
     outf << "endObjectProperties" << endl;
 
 	return 1;
@@ -154,10 +172,12 @@ int valclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	string hoprDefault("-9");
 	string loprSrc;
 	string loprDefault("-9");
-
+	string max = "";
+	string min = "";
 	string precSrc;
 	string precDefault("1");
-
+	string precision("");
+	string scaleType("");
 	int direction = 0;
 	colormode = 0;
 
@@ -203,7 +223,19 @@ int valclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 				// What causes this to alarm in medm?
 				if(strstr(s2,"alarm")) colormode = 1;
 			}
-			else outd << "Motif Slider Can't decode " << line << endl;
+			else if(!strcmp(s1,"lowLimit")) {
+				min = s2;
+			}
+			else if(!strcmp(s1,"highLimit")) {
+				max = s2;
+			}
+			else if(!strcmp(s1,"scaleType")) {
+				scaleType = s2;
+			}
+			else if(!strcmp(s1,"precision")) {
+				precision = s2;
+			}
+			else outd << "Motif Slider: Can't decode line: " << translator::line_ctr << line << endl;
 		}
 	} while (open > 0);
 
@@ -218,6 +250,8 @@ int valclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+		outd << "Motif Slider: Not visible on display!" << " at " << translator::line_ctr << endl;
 
 	if(urgb) {
 		outf << "fgColor rgb " << cmap.getRGB(bclr+1) << endl;
@@ -245,15 +279,24 @@ int valclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 
 	if(direction)
 		outf << "orientation \"vertical\"" << endl;
-	if(loprDefault != "-9")
+	if(strstr(scaleType.c_str(), "logarithm")!= 0x0)
+		outf << "displayFormat \"Exponential\"" << endl;
+	else
+		outf << "displayFormat \"FFloat\"" << endl;
+	if(precision.length())
+		outf << "precision " << precision << endl;
+	if(min.length())
+		outf << "scaleMin " << min << endl;
+	else if(loprDefault != "-9")
 		outf << "scaleMin " << loprDefault << endl;
-	if(hoprDefault != "-9")
+	if(max.length())
+		outf << "scaleMax " << max << endl;
+	else if(hoprDefault != "-9")
 		outf << "scaleMax " << hoprDefault << endl;
 	else 
 		outf << "limitsFromDb" << endl;
 	if(use_limits)
 		outf << "showLimits" << endl;
-
 	string dot(".");
 	int tpos;
     tpos = dPrecision.find(dot,0);
@@ -280,12 +323,17 @@ mbuttonclass::~mbuttonclass()
 int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 {
 	bool isNum = true;
+	bool isSensitive = false;
 	int ret;
-	char *ptr;
-	string squote;
-	squote =  "\"";
-	string tname;
 	int tpos;
+	char *ptr;
+	string squote("\"");
+	string sensitive_chan("");
+	string sensitive_mode("");
+	string button_type("");
+	string tname;
+	int pressed_bclr = -1;
+	string pressed_label("");
 
 	colormode = 0;
 	//outd << "In MessageButton " << translator::line_ctr  << endl;
@@ -296,6 +344,8 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 		if(pos != -1)  open++; 
 		pos = line.find(bclose,0);
         if(pos != -1)  open--; 
+        pos = line.find("sensitive",0);
+		if(pos != -1)  isSensitive = true;
 
         eq_pos = line.find(eq,0);
         if(eq_pos != -1){
@@ -306,7 +356,13 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
             else if(!strcmp(s1,"width"))  wid = atoi(s2); 
             else if(!strcmp(s1,"height"))  hgt = atoi(s2); 
 			else if(!strcmp(s1,"clr"))  clr = atoi(s2); 
-			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2); 
+			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2);
+			else if((!strcmp(s1,"chan")) && isSensitive) {
+				sensitive_chan = s2;
+			}
+			else if((!strcmp(s1,"sensitive_mode")) && isSensitive) {
+				sensitive_mode = string(line, eq_pos, std::string::npos);
+			}
 			else if((!strcmp(s1,"chan")) || (!strcmp(s1,"ctrl")) )
 				chan = string(line, eq_pos+1, std::string::npos);
 			else if(!strcmp(s1,"label"))  
@@ -332,10 +388,20 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 				// What causes this to alarm in medm?
 				if(strstr(s2,"alarm")) colormode = 1;
 			}
-			else outd << "Message Button Can't decode " << line << endl;
+			else if(!strcmp(s1,"type"))  {
+				button_type = s2;
+			}
+			else if(!strcmp(s1,"pressed_bclr"))  {
+				pressed_bclr = atoi(s2);
+			}
+			else if(!strcmp(s1,"pressed_label"))  {
+				pressed_label = string(line, eq_pos, std::string::npos);
+			}
+			else {
+				outd << "Message Button: Can't decode line: " << translator::line_ctr << line << endl;
+			}
 		}
     } while (open > 0);
-
 	outf << endl;
     outf << "# (Message Button)" << endl;
     outf << "object activeMessageButtonClass" << endl;
@@ -347,9 +413,15 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
-	if(urgb) {
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+        outd << "Message Button: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
+    if(urgb) {
 		outf << "fgColor rgb " << cmap.getRGB(clr) << endl;
-		outf << "onColor rgb " << cmap.getRGB(bclr) << endl;
+		if(pressed_bclr >= 0)
+			outf << "onColor rgb " << cmap.getRGB(pressed_bclr) << endl;
+		else
+			outf << "onColor rgb " << cmap.getRGB(bclr) << endl;
 		outf << "offColor rgb " << cmap.getRGB(bclr) << endl;
 		outf << "topShadowColor rgb " << cmap.getRGB(0) << endl;
 		outf << "botShadowColor rgb " << cmap.getRGB(14) << endl;
@@ -363,8 +435,27 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "controlPv " << chan << endl;
     outf << "pressValue " << press_msg << endl;
     outf << "releaseValue " << release_msg << endl;
-    outf << "onLabel " << label << endl;
+    if(pressed_label.length()>0)
+    	outf << "onLabel " << pressed_label << endl;
+    else
+    	outf << "onLabel " << label << endl;
     outf << "offLabel " << label << endl;
+    if (button_type.length() > 0) {
+		pos = button_type.find("push_and_close",0);
+		if(pos != -1) {
+			outf << "closeOnRelease" << endl;
+		} else {
+			pos = button_type.find("toggle",0);
+			if(pos != -1) {
+				outf << "toggle" << endl;
+			} else {
+				pos = button_type.find("push",0);
+				if(pos != -1) {
+					outf << "" << endl;
+				}
+			}
+		}
+	}
     outf << "3d" << endl;
 	if (isNum)
 		outf << "useEnumNumeric" << endl;
@@ -374,6 +465,14 @@ int mbuttonclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 		outf << "font \"" << fptr << "\"" << endl;
 	} else {
 		outf << "font \"" << "helvetica-bold-r-12.0" << "\"" << endl;
+	}
+	if(isSensitive) {
+		outf << "visPv \"" << sensitive_chan << "\"" << endl;
+		if(!strcmp(sensitive_mode.c_str(), "if zero")) {
+			outf << "visInvert" << endl;
+		}
+		outf << "visMin \"1\"" << endl;
+		outf << "visMax \"2\"" << endl;
 	}
     outf << "endObjectProperties" << endl;
 	return 1;
@@ -398,58 +497,101 @@ shellclass::~shellclass()
 }
 
 // process the "shell command" object
-int shellclass::parse(ifstream &inf, ostream &outf, ostream &outd)
+int shellclass::parse(ifstream &inf, ostream &outf, ostream &outd, bool ismenuItem)
 {
 	int shell_ctr = 0;
+	bool hasMoreElements = true;
 
 	vector <shellnode> shelllist;
 	shellnode *sh = NULL;
 
 	colormode = 0;
 	//outd << "In Shell " << translator::line_ctr << endl;
-	do {
-		getline(inf,line);
-		translator::line_ctr++;
-		pos = line.find(bopen,0);
-		if(pos != -1)  open++; 
-		pos = line.find(bclose,0);
-        if(pos != -1)  open--; 
-
-        eq_pos = line.find(eq,0);
-        if(eq_pos != -1){
-			line.replace(eq_pos,1,space);
-			snum = sscanf(line.c_str(), "%s %s", s1,s2);
-			if     (!strcmp(s1,"x"))  x = atoi(s2); 
-			else if(!strcmp(s1,"y"))  y = atoi(s2); 
-			else if(!strcmp(s1,"width"))  wid = atoi(s2); 
-			else if(!strcmp(s1,"height"))  hgt = atoi(s2); 
-			else if(!strcmp(s1,"clr"))  clr = atoi(s2); 
-			else if(!strcmp(s1,"bclr"))  bclr = atoi(s2); 
-
-			else if(sh && strstr(s1, "label")!= 0x0) {
-				sh->label = string(line, eq_pos+1, std::string::npos);
-			}
-			else if(sh && strstr(s1, "name")!= 0x0) {
-				sh->name = string(line, eq_pos+1, std::string::npos);
-			}
-			else if(sh && (strstr(s1, "args")!= 0x0)) {
-				sh->args = string(line, eq_pos+1, std::string::npos);
-			}
-		} else { 
-			if( (strstr(line.c_str(), "command")!= 0x0)) {
-				sh = new shellnode();
-			}
-			else if(sh && (strstr(line.c_str(), "}")!= 0x0)) {
-				// Copy data to vector
-				if(sh->name.length() > 2) { // empty item will be ""
-					shelllist.push_back(*sh);
-					shell_ctr++;
-				}
-				delete sh;
-				sh = NULL;
-			}
+	while(hasMoreElements) {
+		if(!ismenuItem) {
+			hasMoreElements = false;
 		}
-    } while (open > 0);
+		do {
+			getline(inf,line);
+			translator::line_ctr++;
+			pos = line.find(bopen,0);
+			if(pos != -1)  open++;
+			pos = line.find(bclose,0);
+			if(pos != -1)  open--;
+
+			if(strstr(line.c_str(), "children") != 0x0) {
+				translator::line_ctr--;
+				inf.clear();
+				inf.seekg(0);
+				for(int i = 0; i < translator::line_ctr; i++)
+					getline(inf,line);
+				/*//do {
+					getline(inf,line);
+					translator::line_ctr++;
+					pos = line.find(bopen,0);
+					if(pos != -1)  open++;
+					pos = line.find(bclose,0);
+					if(pos != -1)  open--;
+				//} while(open > 0);*/
+				hasMoreElements = false;
+				break;
+			}
+
+			eq_pos = line.find(eq,0);
+			if(eq_pos != -1){
+				line.replace(eq_pos,1,space);
+				snum = sscanf(line.c_str(), "%s %s", s1,s2);
+				/*if(!sh) {
+					sh = new shellnode();
+				}*/
+				if     (!strcmp(s1,"x"))  x = atoi(s2);
+				else if(!strcmp(s1,"y"))  y = atoi(s2);
+				else if(!strcmp(s1,"width"))  wid = atoi(s2);
+				else if(!strcmp(s1,"height"))  hgt = atoi(s2);
+				else if(!strcmp(s1,"clr"))  clr = atoi(s2);
+				else if(!strcmp(s1,"bclr"))  bclr = atoi(s2);
+
+				else if(sh && strstr(s1, "label")!= 0x0) {
+					sh->label = string(line, eq_pos+1, std::string::npos);
+					if(sh->name.length() <= 2)
+						sh->name = sh->label;
+				}
+				else if(sh && strstr(s1, "name")!= 0x0) {
+					sh->name = string(line, eq_pos+1, std::string::npos);
+				}
+				else if(sh && (strstr(s1, "args")!= 0x0)) {
+					sh->args = string(line, eq_pos+1, std::string::npos);
+				}
+				else if(sh && (strstr(s1, "type")!= 0x0)) {
+					sh->type = string(line, eq_pos+1, std::string::npos);
+				} else if(sh && (strstr(s1, "command")!= 0x0)) {
+					sh->name = string(line, eq_pos+1, std::string::npos);
+				}
+			} else {
+				if( (strstr(line.c_str(), "menuItem")!= 0x0)) {
+					if(!sh)
+						sh = new shellnode();
+				} else if( (strstr(line.c_str(), "command")!= 0x0)) {
+					if(!sh)
+						sh = new shellnode();
+				}
+				else if(sh && (strstr(line.c_str(), "}")!= 0x0)) {
+					// Copy data to vector
+					if(sh->name.length() > 2) { // empty item will be ""
+						shelllist.push_back(*sh);
+						shell_ctr++;
+					}
+					delete sh;
+					sh = NULL;
+				}
+			}
+		} while (open > 0);
+
+	}
+	if(sh) {
+		delete sh;
+		sh = NULL;
+	}
 
 	outf << endl;
     outf << "# (Shell Command)" << endl;
@@ -462,7 +604,9 @@ int shellclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
-
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+        outd << "Shell Command: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 	if(urgb) {
 		outf << "fgColor rgb " << cmap.getRGB(clr) << endl;
 		outf << "bgColor rgb " << cmap.getRGB(bclr) << endl;
@@ -797,6 +941,8 @@ int relatedclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 	outf << "y " << y << endl;
 	outf << "w " << wid<< endl;
 	outf << "h " << hgt << endl;
+	if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height)
+	    outd << "Related Display: Not visible on display!" << " at " << translator::line_ctr << endl;
 
 	if(urgb) {
 		outf << "fgColor rgb " << cmap.getRGB(clr) << endl;
@@ -981,7 +1127,7 @@ int menuclass::parse(ifstream &inf, ostream &outf, ostream &outd)
                 else if(strstr(s2, "alarm") != 0x0) colormode = 1;
                 else if(strstr(s2, "discrete") != 0x0) colormode = 2;
             }
-			else outd << "Menu Button Can't decode " << line << endl;
+			else outd << "Menu Button: Can't decode line: " << translator::line_ctr << line << endl;
 		}
     } while (open > 0);
 
@@ -996,6 +1142,9 @@ int menuclass::parse(ifstream &inf, ostream &outf, ostream &outd)
     outf << "y " << y << endl;
     outf << "w " << wid<< endl;
     outf << "h " << hgt << endl;
+    if(x < -wid || x > translator::display_width || y < -hgt || y > translator::display_height) {
+        outd << "Menu Button: Not visible on display!" << " at " << translator::line_ctr << endl;
+    }
 
 	if(urgb) {
 		outf << "fgColor rgb " << cmap.getRGB(clr) << endl;
