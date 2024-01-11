@@ -45,12 +45,12 @@ char *s;
   l = strlen( dest );
   newMax = max - l;
   if ( newMax < 0 ) {
-    dest[max] = 0;
+    dest[max] = 0x0;
     return dest;
   }
 
-  s = strncat( dest, src, newMax );
-  dest[max] = 0;
+  s = strncat( dest, src, strlen(dest) );
+  dest[max] = 0x0;
 
   return s;
 
@@ -146,7 +146,8 @@ int tryAgain, bufOnHeap;
 
     lineNum++;
 
-    strcpy( buf, str );
+    strncpy( buf, str, maxLen );
+    buf[maxLen] = 0x0;
 
     ctx = NULL;
     tk = strtok_r( buf, "\n", &ctx );
@@ -253,7 +254,7 @@ char value[14][63+1];
         for ( ii=first, iii=0; ii<=last; ii++, iii++ ) {
           value[nProperties][iii] = fontSpec[ii];
         }
-        value[nProperties][iii] = 0;
+        value[nProperties][iii] = 0x0;
 
         // printf( "state: STORE_VALUE property %-d = \"%s\", nProperties=%-d, nStrings=%-d\n", nProperties, value[nProperties], nProperties, nStrings );
       }
@@ -284,19 +285,19 @@ char value[14][63+1];
   }
 
   strncpy( foundary, value[0], 63 );
-  foundary[63] = 0;
+  foundary[63] = 0x0;
 
   strncpy( family, value[1], 63 );
-  family[63] = 0;
+  family[63] = 0x0;
 
   strncpy( weight, value[2], 63 );
-  weight[63] = 0;
+  weight[63] = 0x0;
 
   strncpy( slant, value[3], 63 );
-  slant[63] = 0;
+  slant[63] = 0x0;
 
   strncpy( pixelSize, value[7], 63 );
-  pixelSize[63] = 0;
+  pixelSize[63] = 0x0;
 
   return FONTINFO_SUCCESS;
 
@@ -337,6 +338,7 @@ char *tk, spec[127+1], rest[127+1], foundry[63+1], family[63+1], weight[31+1],
   if ( *n == 1 ) return list;
 
   strncpy( spec, rest, 127 );
+  spec[127] = 0x0;
 
   tk = strtok( spec, "-" );
   if ( !tk ) goto err_return;
@@ -359,6 +361,7 @@ char *tk, spec[127+1], rest[127+1], foundry[63+1], family[63+1], weight[31+1],
   if ( *n == 1 ) return list;
 
   strncpy( spec, rest, 127 );
+  spec[127] = 0x0;
 
   tk = strtok( spec, "-" );
   if ( !tk ) goto err_return;
@@ -382,6 +385,7 @@ char *tk, spec[127+1], rest[127+1], foundry[63+1], family[63+1], weight[31+1],
   if ( *n == 1 ) return list;
 
   strncpy( spec, rest, 127 );
+  spec[127] = 0x0;
 
   tk = strtok( spec, "-" );
   if ( !tk ) goto err_return;
@@ -498,14 +502,17 @@ char *tk, spec[127+1], name[127+1], family[63+1], weight[31+1],
 
   ptr->isScalable = (char) isScalable;
 
-  ptr->fullName = new char[strlen(list[0])+1];
-  strcpy( ptr->fullName, list[0] );
+  ptr->fullName = new char[127+1];
+  strncpy( ptr->fullName, list[0], 127);
+  ptr->fullName[127] = 0x0;
 
-  ptr->name = new char[strlen(name)+1];
-  strcpy( ptr->name, name );
+  ptr->name = new char[127+1];
+  strncpy( ptr->name, name, 127);
+  ptr->name[127] = 0x0;
 
-  ptr->family = new char[strlen(family)+1];
-  strcpy( ptr->family, family );
+  ptr->family = new char[63+1];
+  strncpy( ptr->family, family, 63);
+  ptr->family[63] = 0x0;
 
   ptr->weight = weight[0];
 
@@ -522,7 +529,7 @@ void fontInfoClass::setMediumString (
 ) {
 
   strncpy( mediumString, str, 63 );
-  mediumString[63] = 0;
+  mediumString[63] = 0x0;
 
 }
 void fontInfoClass::setBoldString (
@@ -530,7 +537,7 @@ void fontInfoClass::setBoldString (
 ) {
 
   strncpy( boldString, str, 63 );
-  boldString[63] = 0;
+  boldString[63] = 0x0;
 
 }
 void fontInfoClass::setRegularString (
@@ -538,7 +545,7 @@ void fontInfoClass::setRegularString (
 ) {
 
   strncpy( regularString, str, 63 );
-  regularString[63] = 0;
+  regularString[63] = 0x0;
 
 }
 void fontInfoClass::setItalicString (
@@ -546,7 +553,7 @@ void fontInfoClass::setItalicString (
 ) {
 
   strncpy( italicString, str, 63 );
-  italicString[63] = 0;
+  italicString[63] = 0x0;
 
 }
 
@@ -631,14 +638,17 @@ char spec[127+1], name[127+1], foundary[63+1], family[63+1], weight[63+1],
 
   ptr->isScalable = (char) isScalable;
 
-  ptr->fullName = new char[strlen(list[0])+1];
-  strcpy( ptr->fullName, list[0] );
+  ptr->fullName = new char[127+1];
+  strncpy( ptr->fullName, list[0], 127 );
+  ptr->fullName[127] = 0x0;
 
-  ptr->name = new char[strlen(name)+1];
-  strcpy( ptr->name, name );
+  ptr->name = new char[127+1];
+  strncpy( ptr->name, name, 127);
+  ptr->name[127] = 0x0;
 
-  ptr->family = new char[strlen(userFontFamilyName)+1];
-  strcpy( ptr->family, userFontFamilyName );
+  ptr->family = new char[63+1];
+  strncpy( ptr->family, userFontFamilyName, 63 );
+  ptr->family[63] = 0x0;
 
   ptr->weight = weight[0];
 
@@ -713,14 +723,17 @@ char *tk, spec[127+1], name[127+1], family[63+1], weight[31+1],
 
   ptr->isScalable = (char) isScalable;
 
-  ptr->fullName = new char[strlen(list[0])+1];
-  strcpy( ptr->fullName, list[0] );
+  ptr->fullName = new char[127+1];
+  strncpy( ptr->fullName, list[0], 127 );
+  ptr->fullName[127] = 0x0;
 
-  ptr->name = new char[strlen(name)+1];
-  strcpy( ptr->name, name );
+  ptr->name = new char[127+1];
+  strncpy( ptr->name, name, 127 );
+  ptr->name[127] = 0x0;
 
-  ptr->family = new char[strlen(family)+1];
-  strcpy( ptr->family, family );
+  ptr->family = new char[63+1];
+  strncpy( ptr->family, family, 63);
+  ptr->family[63] = 0x0;
 
   ptr->weight = weight[0];
 
@@ -749,12 +762,22 @@ char buf[255+1], t1[255+1], t2[255+1], t3[255+1], t4[255+1],
 int i, ii, iii, n, pointSize[200], numSizes;
 int preload;
 char **list;
-
+  memset(buf, 0x0, 255+1);
+  memset(t1, 0x0, 255+1);
+  memset(t2, 0x0, 255+1);
+  memset(t3, 0x0, 255+1);
+  memset(t4, 0x0, 255+1);
+  memset(t5, 0x0, 255+1);
+  memset(t6, 0x0, 255+1);
+  memset(t7, 0x0, 255+1);
+  memset(mod, 0x0, 4*(255+1));
+  memset(fontSpec, 0x0, 255+1);
   strncpy( buf, line, 255 );
+  buf[255] = 0x0;
 
   tk1 = strtok_r( buf, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t1, tk1 );
+    strncpy( t1, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -763,7 +786,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t2, tk1 );
+    strncpy( t2, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -775,7 +798,7 @@ char **list;
     ctx2 = NULL;
     tk2 = strtok_r( t2, ",", &ctx2 );
     if ( tk2 ) {
-      strcpy( mod[0], tk2 );
+      strncpy( mod[0], tk2, 255 );
     }
     else {
       fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -784,7 +807,7 @@ char **list;
 
     tk2 = strtok_r( NULL, ",", &ctx2 );
     if ( tk2 ) {
-      strcpy( mod[1], tk2 );
+      strncpy( mod[1], tk2, 255 );
     }
     else {
       fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -793,7 +816,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t3, tk1 );
+    strncpy( t3, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -802,7 +825,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t4, tk1 );
+    strncpy( t4, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -814,7 +837,7 @@ char **list;
     ctx2 = NULL;
     tk2 = strtok_r( t4, ",", &ctx2 );
     if ( tk2 ) {
-      strcpy( mod[2], tk2 );
+      strncpy( mod[2], tk2, 255 );
     }
     else {
       fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -823,7 +846,7 @@ char **list;
 
     tk2 = strtok_r( NULL, ",", &ctx2 );
     if ( tk2 ) {
-      strcpy( mod[3], tk2 );
+      strncpy( mod[3], tk2, 255 );
     }
     else {
       fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -832,7 +855,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t5, tk1 );
+    strncpy( t5, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -841,7 +864,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t6, tk1 );
+    strncpy( t6, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -881,7 +904,7 @@ char **list;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t7, tk1 );
+    strncpy( t7, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -929,6 +952,10 @@ char **list;
 				abort();
 			}
 		#pragma GCC diagnostic pop
+		if(!display) {
+			printf("missing display\n");
+			abort();
+		}
         list = XListFonts( display, fontSpec, 1, &n );
         if ( n == 0 ) {
           if ( checkBestFont && !requireExactMatch ) {
@@ -1012,7 +1039,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( buf, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t1, tk1 );
+    strncpy( t1, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1021,7 +1048,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t2, tk1 );
+    strncpy( t2, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1033,7 +1060,7 @@ XFontStruct *fs;
   ctx2 = NULL;
   tk2 = strtok_r( t2, ",", &ctx2 );
   if ( tk2 ) {
-    strcpy( mod[0], tk2 );
+    strncpy( mod[0], tk2, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1044,7 +1071,7 @@ XFontStruct *fs;
 
   tk2 = strtok_r( NULL, ",", &ctx2 );
   if ( tk2 ) {
-    strcpy( mod[1], tk2 );
+    strncpy( mod[1], tk2, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1055,7 +1082,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t3, tk1 );
+    strncpy( t3, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1064,7 +1091,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t4, tk1 );
+    strncpy( t4, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1076,7 +1103,7 @@ XFontStruct *fs;
   ctx2 = NULL;
   tk2 = strtok_r( t4, ",", &ctx2 );
   if ( tk2 ) {
-    strcpy( mod[2], tk2 );
+    strncpy( mod[2], tk2, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1087,7 +1114,7 @@ XFontStruct *fs;
 
   tk2 = strtok_r( NULL, ",", &ctx2 );
   if ( tk2 ) {
-    strcpy( mod[3], tk2 );
+    strncpy( mod[3], tk2, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1098,7 +1125,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t5, tk1 );
+    strncpy( t5, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1107,7 +1134,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t6, tk1 );
+    strncpy( t6, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1147,7 +1174,7 @@ XFontStruct *fs;
 
   tk1 = strtok_r( NULL, "\t\n()", &ctx1 );
   if ( tk1 ) {
-    strcpy( t7, tk1 );
+    strncpy( t7, tk1, 255 );
   }
   else {
     fprintf( stderr, fontInfoClass_str5, lastNonCommentLine );
@@ -1291,7 +1318,8 @@ int foundBrace;
     if ( ptr ) {
 
       ctx1 = NULL;
-      strcpy( buf, line );
+      strncpy( buf, line, 255 );
+      buf[255] = 0x0;
 
       tk1 = strtok_r( buf, "\t\n", &ctx1 );
       if ( tk1 ) {
@@ -1305,7 +1333,8 @@ int foundBrace;
 
       if ( ! foundBrace ) {
 
-        strcpy( lastLine, line );
+        strncpy( lastLine, line, 255 );
+        lastLine[255] = 0x0;
 
         stat = checkSingleFontSpec( app, d, userFontFamilyName, line,
          major, minor, release );
@@ -1373,7 +1402,8 @@ int empty = 1;
       empty = 0;
 
       ctx1 = NULL;
-      strcpy( buf, line );
+      strncpy( buf, line, 255 );
+      buf[255] = 0x0;
       if ( lineNum == 2 || lineNum == 3 ) {
         if ( lineIsDefaultFontTag( line ) ) {
             continue;
@@ -1383,7 +1413,7 @@ int empty = 1;
       tk1 = strtok_r( buf, "=\t\n()", &ctx1 );
       if ( tk1 ) {
         strncpy( userFontFamilyName, tk1, 63 );
-        userFontFamilyName[63] = 0;
+        userFontFamilyName[63] = 0x0;
       }
       else {
         fclose( f );
@@ -1407,7 +1437,8 @@ int empty = 1;
 
           // tk1 points to first character after "<name>="
 
-          strcpy( buf, line );
+          strncpy( buf, line, 255 );
+          buf[255] = 0x0;
 
           stat = getSingleFontSpec( app, d, userFontFamilyName, tk1,
            major, minor, release );
@@ -1454,6 +1485,7 @@ int fontInfoClass::lineIsDefaultFontTag( const char * line )
     }
 
     strncpy( buf, line, 255 );
+    buf[255] = 0x0;
 
     // Default font tags look like this w/ 4 tokens delimited by '-'
     // helvetica-medium-r-10.0
