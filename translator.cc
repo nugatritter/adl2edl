@@ -22,6 +22,41 @@ static string version = "1.9.1 (" + string(__DATE__) + ", " + string(__TIME__)
 		+ ")";
 
 map<string, string> graphicRuleMap;
+string translator::dir;
+int translator::line_ctr;
+int translator::display_height;
+int translator::display_width;
+struct battr translator::ba;
+struct dattr translator::da;
+
+bool urgb;
+bool retitle; // already used 'rename'
+int default_clr = 14;
+int default_bclr = 3;
+int debugAdl2Edl = 0;
+
+fontInfoClass fi;
+static char *fptr;
+
+void usage() {
+	cout << "Version " << version << endl;
+	cout << "usage: [-h] [-rgb] [-rename] [-d LEVEL] medm_file [edm_file]"
+			<< endl;
+	cout << "   medm_file is the name of an medm file to translate to edm."
+			<< endl;
+	cout << "      medm_file will typically end in .adl" << endl;
+	cout << "   edm_file is the edm filename." << endl;
+	cout << "      If not used, the translation is written to stdout" << endl;
+	cout << "      and diagnostic output to ${medm_file}.adl.db" << endl;
+	cout << "Options:" << endl;
+	cout << " -h          show this help message and exit" << endl;
+	cout << " -rgb        use rgb mode to specify colors in the edm translation"
+			<< endl;
+	cout << " -rename     rename the medm file substituting .edl for .adl"
+			<< endl;
+	cout << " -f fontFile set the font filename" << endl;
+	cout << " -d LEVEL    set the diagnostic output to LEVEL" << endl;
+}
 
 class Dm2kGraphicRuleParser {
 	const string whitespace = " \t";
@@ -143,7 +178,7 @@ public:
 					os << "numStates " << numStates << "\n";
 					os << "minValues {" << "\n";
 					//if(firstNumber[0][0] == '0') {
-					for (int i = 1; i < numStates; i++) {
+					for (int i = 0; i < numStates; i++) {
 						os << i << " " << firstNumber[i] << "\n";
 					}
 					//} else {
@@ -174,7 +209,7 @@ public:
 			os << "numStates " << numStates << "\n";
 			os << "minValues {" << "\n";
 			//if(firstNumber[0][0] == '0') {
-			for (int i = 1; i < numStates; i++) {
+			for (int i = 0; i < numStates; i++) {
 				os << i << " " << firstNumber[i] << "\n";
 			}
 			//} else {
@@ -201,42 +236,6 @@ public:
 		return 1;
 	}
 };
-
-string translator::dir;
-int translator::line_ctr;
-int translator::display_height;
-int translator::display_width;
-struct battr translator::ba;
-struct dattr translator::da;
-
-bool urgb;
-bool retitle; // already used 'rename'
-int default_clr = 14;
-int default_bclr = 3;
-int debugAdl2Edl = 0;
-
-fontInfoClass fi;
-static char *fptr;
-
-void usage() {
-	cout << "Version " << version << endl;
-	cout << "usage: [-h] [-rgb] [-rename] [-d LEVEL] medm_file [edm_file]"
-			<< endl;
-	cout << "   medm_file is the name of an medm file to translate to edm."
-			<< endl;
-	cout << "      medm_file will typically end in .adl" << endl;
-	cout << "   edm_file is the edm filename." << endl;
-	cout << "      If not used, the translation is written to stdout" << endl;
-	cout << "      and diagnostic output to ${medm_file}.adl.db" << endl;
-	cout << "Options:" << endl;
-	cout << " -h          show this help message and exit" << endl;
-	cout << " -rgb        use rgb mode to specify colors in the edm translation"
-			<< endl;
-	cout << " -rename     rename the medm file substituting .edl for .adl"
-			<< endl;
-	cout << " -f fontFile set the font filename" << endl;
-	cout << " -d LEVEL    set the diagnostic output to LEVEL" << endl;
-}
 
 int main(int argc, char **argv) {
 	char outfile[200];
@@ -298,7 +297,7 @@ int main(int argc, char **argv) {
 	// 3 0	t *.adl *.edl
 	// 4 1 	t -rgb *.adl *.edl
 	// 4 1 	t -rename *.adl *.edl
-	// 4 2 	t -rename *.adl 
+	// 4 2 	t -rename *.adl
 	// 5 2  t -rgb -rename *.adl *.edl
 
 	numFiles = argc - optind;
@@ -324,8 +323,8 @@ int main(int argc, char **argv) {
 		if (edmkGraphicRulePrefix && *edmkGraphicRulePrefix) {
 			graphicRuleParser.parse(dm2kGraphicRuleFile, edmkGraphicRulePrefix);
 		} else {
-			cerr << "environment variable EDM_GRAPHIC_RULE_PREFIX not set"
-					<< endl;
+			//cerr << "environment variable EDM_GRAPHIC_RULE_PREFIX not set"
+			//		<< endl;
 			graphicRuleParser.parse(dm2kGraphicRuleFile, emptyString);
 		}
 	} else {

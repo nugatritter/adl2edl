@@ -625,8 +625,12 @@ int shellclass::parse(ifstream &inf, ostream &outf, ostream &outd, bool ismenuIt
 	} else {
 		outf << "font \"" << "helvetica-bold-r-12.0" << "\"" << endl;
 	}
-
-	outf << "buttonLabel \"!\"" << endl;
+    if(shell_ctr == 0)
+    	outf << "buttonLabel \"!\"" << endl;
+    else if(shell_ctr == 1)
+    	outf << "buttonLabel \"" << shelllist[0].label << "\"" << endl;
+    else
+    	outf << "buttonLabel \"-->\"" << endl;
     outf << "numCmds " << shell_ctr << endl;
 
     outf << "commandLabel {" << endl;
@@ -821,9 +825,11 @@ int relatedclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 				saved_name = tname;
 
 				if(rel && tname.length() != 0) { // medm ignores blank names. edm does not.
-					adl_pos = tname.find(adl,0);
-					if(adl_pos != -1){
-						tname.replace(adl_pos,4,echar);
+					if(retitle) {
+						adl_pos = tname.find(adl,0);
+						if(adl_pos != -1){
+							tname.replace(adl_pos,4,echar);
+						}
 					}
 					rel->name = tname;
 				}
@@ -977,7 +983,7 @@ int relatedclass::parse(ifstream &inf, ostream &outf, ostream &outd)
 				outf << "buttonLabel \"" << title << "\""<< endl;
 			} else {
 				//outf << "buttonLabel \"[ ] " << title << "\""<< endl;
-				outf << "icon" << endl;
+				//outf << "icon" << endl;
 				outf << "buttonLabel \"" << title << "\""<< endl;
 			}
 	} else {

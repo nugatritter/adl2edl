@@ -1001,8 +1001,8 @@ int textmonclass::parse(ifstream &inf, ostream &outf, ostream &outd, int edit)
 				if(strstr(line.c_str(), "Center")!= 0x0) align = "center";
 				else if(strstr(line.c_str(), "West")!= 0x0) align = "left";
 				else if(strstr(line.c_str(), "East")!= 0x0) align = "right";
-				else if(strstr(line.c_str(), "North")!= 0x0) align = "top";
-				else if(strstr(line.c_str(), "South")!= 0x0) align = "bottom";
+				else if(strstr(line.c_str(), "North")!= 0x0) align = "center";
+				else if(strstr(line.c_str(), "South")!= 0x0) align = "center";
 			}
             else if(!strcmp(s1,"chan") || !strcmp(s1,"ctrl") || !strcmp(s1,"rdbk")) { 
                 chan = string(line, eq_pos+1, std::string::npos);
